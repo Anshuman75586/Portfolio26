@@ -7,11 +7,17 @@ export const CONTACT_DETAILS = {
   email: "anshulgourkhede2025@gmail.com",
 };
 
+const formatPhone = (num) => {
+  const str = String(num);
+  return `+91 ${str.slice(0, 4)} ${str.slice(4, 7)} ${str.slice(7)}`;
+};
+
 const Contact = () => {
   return (
     <section
       id="contact"
       className="py-32 bg-brand-bg relative overflow-hidden"
+      aria-label="Contact"
     >
       <div className="container mx-auto px-6 text-center">
         <motion.h2
@@ -40,22 +46,23 @@ const Contact = () => {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="flex flex-col sm:flex-row justify-center gap-6 text-white/70 text-sm md:text-base"
         >
-          <div className="flex flex-col items-center sm:items-start">
+          <address className="flex flex-col items-center sm:items-start not-italic">
             <span className="font-bold text-brand-accent uppercase text-xs mb-1">
               Address
             </span>
             <span>{CONTACT_DETAILS.address}</span>
-          </div>
+          </address>
 
           <div className="flex flex-col items-center sm:items-start">
             <span className="font-bold text-brand-accent uppercase text-xs mb-1">
               Phone
             </span>
             <a
-              href={`tel:${CONTACT_DETAILS.PhoneNO}`}
+              href={`tel:+91${CONTACT_DETAILS.PhoneNO}`}
               className="hover:text-brand-accent transition-colors"
+              aria-label={`Call ${formatPhone(CONTACT_DETAILS.PhoneNO)}`}
             >
-              {CONTACT_DETAILS.PhoneNO}
+              {formatPhone(CONTACT_DETAILS.PhoneNO)}
             </a>
           </div>
 
@@ -66,6 +73,7 @@ const Contact = () => {
             <a
               href={`mailto:${CONTACT_DETAILS.email}`}
               className="hover:text-brand-accent transition-colors"
+              aria-label={`Send email to ${CONTACT_DETAILS.email}`}
             >
               {CONTACT_DETAILS.email}
             </a>
@@ -74,7 +82,7 @@ const Contact = () => {
       </div>
 
       {/* Decorative background blur */}
-      <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-brand-accent/5 blur-[150px] rounded-full -z-10" />
+      <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-brand-accent/5 blur-[150px] rounded-full -z-10" aria-hidden="true" />
     </section>
   );
 };

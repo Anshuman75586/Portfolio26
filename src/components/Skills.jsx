@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { SKILLS_DATA } from "../utils/constants";
 
-const TechMarquee = () => {
+const TechMarquee = memo(() => {
   const marqueeSkills = [
     "React",
     "Node.js",
@@ -17,29 +18,41 @@ const TechMarquee = () => {
     "Figma",
   ];
 
+  // Duplicate for seamless loop
+  const doubled = [...marqueeSkills, ...marqueeSkills];
+
   return (
     <div className="relative py-12 overflow-hidden border-y border-white/5 bg-white/[0.01] backdrop-blur-sm">
       <div className="flex whitespace-nowrap">
-        <motion.div
-          animate={{ x: [0, -1000] }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="flex gap-24 items-center px-12"
+        {/* Pure CSS animation instead of JS-driven framer-motion — runs on GPU compositor thread */}
+        <div
+          className="flex gap-24 items-center px-12 animate-marquee"
+          style={{ willChange: "transform" }}
         >
-          {[...marqueeSkills, ...marqueeSkills, ...marqueeSkills].map(
-            (skill, i) => (
-              <div key={i} className="flex items-center gap-6 group">
-                <span className="text-5xl md:text-7xl font-display font-bold uppercase tracking-tighter text-white/5 group-hover:text-brand-accent/30 transition-all duration-500 cursor-default select-none">
-                  {skill}
-                </span>
-                <div className="w-2.5 h-2.5 rounded-full bg-brand-accent/20 group-hover:bg-brand-accent/50 group-hover:scale-125 transition-all duration-500" />
-              </div>
-            ),
-          )}
-        </motion.div>
+          {doubled.map((skill, i) => (
+            <div key={i} className="flex items-center gap-6 group shrink-0">
+              <span className="text-5xl md:text-7xl font-display font-bold uppercase tracking-tighter text-white/5 group-hover:text-brand-accent/30 transition-all duration-500 cursor-default select-none">
+                {skill}
+              </span>
+              <div className="w-2.5 h-2.5 rounded-full bg-brand-accent/20 group-hover:bg-brand-accent/50 group-hover:scale-125 transition-all duration-500" />
+            </div>
+          ))}
+        </div>
+        {/* Second copy for seamless infinite loop */}
+        <div
+          className="flex gap-24 items-center px-12 animate-marquee"
+          aria-hidden="true"
+          style={{ willChange: "transform" }}
+        >
+          {doubled.map((skill, i) => (
+            <div key={`dup-${i}`} className="flex items-center gap-6 group shrink-0">
+              <span className="text-5xl md:text-7xl font-display font-bold uppercase tracking-tighter text-white/5 group-hover:text-brand-accent/30 transition-all duration-500 cursor-default select-none">
+                {skill}
+              </span>
+              <div className="w-2.5 h-2.5 rounded-full bg-brand-accent/20 group-hover:bg-brand-accent/50 group-hover:scale-125 transition-all duration-500" />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Gradient Overlays for smooth fade */}
@@ -47,7 +60,9 @@ const TechMarquee = () => {
       <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-brand-bg to-transparent z-10" />
     </div>
   );
-};
+});
+
+TechMarquee.displayName = "TechMarquee";
 
 export default function Skills() {
   const categories = [...new Set(SKILLS_DATA.map((skill) => skill.category))];
@@ -60,6 +75,7 @@ export default function Skills() {
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }} // Only animate once — no re-triggers
           transition={{ duration: 0.8 }}
           className="mb-20"
         >
@@ -79,6 +95,7 @@ export default function Skills() {
               key={category}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}
               className="p-8 rounded-3xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors group"
             >
@@ -104,14 +121,14 @@ export default function Skills() {
       </div>
 
       {/* Design border at bottom */}
-      <div className="mt-32 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent relative">
+      <div className="mt-32 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent relative" aria-hidden="true">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-brand-bg border border-brand-accent/50 flex items-center justify-center">
           <div className="w-1 h-1 rounded-full bg-brand-accent" />
         </div>
       </div>
 
       {/* Decorative background element */}
-      <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-brand-accent/5 blur-[150px] rounded-full -z-10" />
+      <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-brand-accent/5 blur-[150px] rounded-full -z-10" aria-hidden="true" />
     </section>
   );
 }

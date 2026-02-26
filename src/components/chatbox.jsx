@@ -1,5 +1,5 @@
 // src/components/ChatBox.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const ChatBox = () => {
@@ -14,9 +14,17 @@ const ChatBox = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [dragY, setDragY] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const isMobile = window.innerWidth <= 768;
+
+  // Safely detect mobile on client side only
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(
     () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
@@ -30,6 +38,30 @@ const ChatBox = () => {
       200,
     );
     return () => clearTimeout(timer);
+  }, [isOpen]);
+
+  // Close chat on Escape key
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Escape" && isOpen) {
+        setIsOpen(false);
+        resetState();
+      }
+    },
+    [isOpen],
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Focus the input when chat opens
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      const timer = setTimeout(() => inputRef.current?.focus(), 400);
+      return () => clearTimeout(timer);
+    }
   }, [isOpen]);
 
   const currentStage = !userData.name
@@ -98,7 +130,7 @@ const ChatBox = () => {
 
     if (currentStage === "name") {
       setUserData((p) => ({ ...p, name: inputValue }));
-      addBotMessage(`Nice to meet you, ${inputValue}. What’s your Gmail?`);
+      addBotMessage(`Nice to meet you, ${inputValue}. What's your Gmail?`);
     }
 
     if (currentStage === "email") {
@@ -129,7 +161,7 @@ const ChatBox = () => {
             .concat({
               id: Date.now() + 2,
               sender: "bot",
-              text: `Thanks! I’ve received your message. ${getFarewell()}`,
+              text: `Thanks! I've received your message. ${getFarewell()}`,
             }),
         );
         setTimeout(() => {
@@ -160,20 +192,24 @@ const ChatBox = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md"
             onClick={toggleChat}
+            aria-hidden="true"
           />
         )}
       </AnimatePresence>
 
       {/* Toggle Button */}
-      <div className="fixed right-4 bottom-6 z-50 flex flex-col items-center">
+      <div className="fixed right-4 bottom-6 z-50 flex flex-col items-center cursor-auto">
         <button
           onClick={toggleChat}
           className="w-14 h-14 rounded-full bg-brand-accent flex items-center justify-center shadow-[0_0_18px_6px_rgba(233,155,99,0.45)] animate-pulse"
+          aria-label={isOpen ? "Close chat" : "Open chat"}
+          aria-expanded={isOpen}
+          aria-controls="chatbox-panel"
         >
-          <span className="text-black font-bold text-lg">💬</span>
+          <span className="text-black font-bold text-lg" aria-hidden="true">💬</span>
         </button>
         {!isOpen && (
-          <span className="mt-2 text-xs text-white/80">Contact us</span>
+          <span className="mt-2 text-xs text-white/80" aria-hidden="true">Contact us</span>
         )}
       </div>
 
@@ -181,6 +217,10 @@ const ChatBox = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            id="chatbox-panel"
+            role="dialog"
+            aria-label="Contact chat"
+            aria-modal="true"
             drag={isMobile ? "y" : false}
             dragConstraints={{ top: 0, bottom: 0 }}
             onDrag={(e, info) => setDragY(info.point.y)}
@@ -191,7 +231,7 @@ const ChatBox = () => {
             animate={{ y: dragY, opacity: 1 }}
             exit={{ y: 30, opacity: 0 }}
             style={{ bottom: isMobile ? 0 : 80, right: isMobile ? 0 : 20 }}
-            className={`fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-white/20
+            className={`fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-white/20 cursor-auto
               ${isMobile ? "left-0 top-auto h-[60vh] w-full" : "w-[400px] h-[60vh]"} bg-brand-bg`}
           >
             <div className="px-4 py-3 border-b border-white/10 flex justify-between items-center text-xs text-white/70">
@@ -199,10 +239,11 @@ const ChatBox = () => {
                 <span>Swipe down to close</span>
               ) : (
                 <>
-                  <span>Let’s start a conversation</span>
+                  <span>Let's start a conversation</span>
                   <button
                     onClick={toggleChat}
                     className="text-white text-lg font-bold"
+                    aria-label="Close chat"
                   >
                     ✕
                   </button>
@@ -210,7 +251,12 @@ const ChatBox = () => {
               )}
             </div>
 
-            <div className="flex-1 p-4 overflow-y-auto space-y-3">
+            <div
+              className="flex-1 p-4 overflow-y-auto space-y-3"
+              role="log"
+              aria-live="polite"
+              aria-label="Chat messages"
+            >
               {messages.map((m) => (
                 <div
                   key={m.id}
@@ -228,7 +274,7 @@ const ChatBox = () => {
                 </div>
               ))}
               {isBotTyping && (
-                <div className="flex gap-1">
+                <div className="flex gap-1" aria-label="Bot is typing">
                   <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce" />
                   <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce delay-150" />
                   <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce delay-300" />
@@ -248,11 +294,14 @@ const ChatBox = () => {
                   onChange={handleInput}
                   placeholder={getPrompt()}
                   rows={1}
-                  className="flex-1 px-4 py-2 text-sm text-white bg-black/20 border border-white/20 rounded-xl focus:outline-none resize-none"
+                  aria-label={getPrompt()}
+                  className="flex-1 px-4 py-2 text-sm text-white bg-black/20 border border-white/20 rounded-xl focus:outline-none focus:border-brand-accent/50 resize-none transition-colors"
                 />
                 <button
+                  type="submit"
                   disabled={!inputValue.trim() || isSubmitting}
                   className="w-10 h-10 rounded-full bg-brand-accent text-black disabled:opacity-40"
+                  aria-label="Send message"
                 >
                   ➤
                 </button>
